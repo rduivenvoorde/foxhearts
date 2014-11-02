@@ -2,10 +2,10 @@
 <head>
 <script src="./jquery-2.1.1.min.js"></script>
 <script>
+
+
 var colors = ['red', 'green', 'blue', 'yellow'];
 //var colors = ['#d7191c', '#fdae61', '#abdda4', '#2b83ba'];
-
-var NROFCOLORS = 4;
 
 function pad(number,length) {
     var str = '' + number;
@@ -25,14 +25,11 @@ View = function(div, matrix){
         var rch = $(this).attr('id').split('_');
         var r = rch[0];
         var c = rch[1];
-        var h = rch[2];
-        console.time('flood');
+        var h = $(this).attr('data-color');
         var hits = matrix.flood(r, c, h);
-        console.timeEnd('flood');
-        console.log('hits',hits);
-        console.time('render');
+        //console.time('render');
         that.render();
-        console.timeEnd('render');
+        //console.timeEnd('render');
     });
 }
 View.prototype.toString = function(withBuffer){
@@ -46,16 +43,16 @@ View.prototype.render = function(){
         }
         for (var j=1;j<this.matrix.cols+1;j++){ 
             var color = this.matrix.mtx[i][j];
-            var cell = $('[id^='+i+'_'+j+']');
+            //var cell = $('[id^='+i+'_'+j+']');  // jquery regular expression SLOWWWWW!!!
+            var cell = $('#'+i+'_'+j);
             if(cell.length==0){
                 // create a fresh cell
-                //console.log('create cell', cell);
-                $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" id="'+i+'_'+j+'_'+color+'"></div></div>'));
+                $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
             }
             else{
-                // remove all classes and set the right
-                // console.log(cell);
+                // remove all classes and set the right color
                 cell.removeClass();
+                cell.attr('data-color',color);
                 if (color>=0){
                     cell.addClass('heart').addClass(colors[color]);
                 }
@@ -78,7 +75,7 @@ Matrix = function(rows, cols){
     }
     for (var i=1;i<rows+1;i++){
         for (var j=1;j<cols+1;j++){
-            var val = Math.floor((Math.random() * NROFCOLORS));
+            var val = Math.floor((Math.random() * colors.length));
             this.mtx[i][j]=val;
         }
     }
@@ -112,7 +109,8 @@ Matrix.prototype.flood = function(row, col, c){
 }
 
 $( document ).ready(function() {
-    m = new Matrix(16,16);
+    //m = new Matrix(16,16);
+    m = new Matrix(5,4);
     v = new View($('#matrix'), m);
     //console.log(m);
 });
