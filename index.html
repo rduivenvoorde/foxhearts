@@ -53,6 +53,9 @@ View = function(div, matrix){
         matrix.collapse();
         that.render();
         //console.log(matrix.mtx);
+        if (matrix.isfinished()){
+            $('#score_message').html("FINISHED, no more moves to play...").removeClass().addClass('red');
+        }
     });
 }
 
@@ -159,7 +162,6 @@ Matrix.prototype.flood = function(row, col, c){
     var hits = 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
     return hits;
 }
-
 Matrix.prototype.collapse = function(){
     // detect empty cell, and collapse down (adding -1 to top)
     for (var c=this.cols+1;c>0;c--){ // going from back to front!
@@ -190,18 +192,28 @@ Matrix.prototype.collapse = function(){
     }
     return;
 }
-
 Matrix.prototype.isfinished = function(){
-    // TODO
+    var finished = true;
+    // going over all cells, checking if either the next on this row, or the
+    // next in this column is the same value (and NOT -1)
+    for (var row=1;row<this.rows+1;row++){
+        for (var col=1;col<this.cols+1;col++){
+            if (this.mtx[row][col]>=0 && 
+                (this.mtx[row][col]==this.mtx[row+1][col] || this.mtx[row][col]==this.mtx[row][col+1])){
+                return false;
+            }
+        }
+    }
+    return finished;
 }
 
 
 $( document ).ready(function() {
-    m = new Matrix(15,15);
+    //m = new Matrix(15,15);
     //m = new Matrix(11,11);
     //m = new Matrix(4,4);
     //m = new Matrix(6,6);
-    //m = new Matrix(2,2);
+    m = new Matrix(2,2);
     v = new View($('#matrix'), m);
     console.log(m.toString());
 });
@@ -279,13 +291,19 @@ left: 0;
    -o-transform-origin: 100% 100%;
    transform-origin :100% 100%;
 }
-.scores {
-    xborder: 1px red solid;
-}
 .score{
     xborder: 1px green solid;
     float:left;
     width:25%;
+}
+.message{
+    float:left;
+    width:50%;
+    height:25px;
+}
+.red{
+    color:red;
+    font-weight:bold;
 }
 body {
     font-family:sans-serif;
@@ -300,6 +318,10 @@ body {
 <div class="scores">
     <div class="score">Score: <span id="score_score"></span></div>
     <div class="score">Index: <span id="score_index"></span></div>
+</div>
+<div style="clear:both;"/>
+<div class="scores">
+    <div class="message"><span id="score_message"></span></div>
 </div>
 <div id="matrix"></div>
 
