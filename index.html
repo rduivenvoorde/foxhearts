@@ -39,16 +39,20 @@ View = function(div, matrix){
         // deep copy
         matrix.pushState();
         var hits = matrix.flood(r, c, h);
-        console.log(hits)
+        // TODO move this to Matrix (combined history: mtx, hearts, score)
+        $('#score_hearts').html(hits);
         if (hits==1){
             //restore
             matrix.popState();
+            hits=0;
         }
+        $('#score_hearts').html(hits);
         //console.time('render');
         that.render();
         //console.timeEnd('render');
         matrix.collapse();
         that.render();
+        //console.log(matrix.mtx);
     });
 }
 
@@ -107,22 +111,6 @@ Matrix = function(rows, cols){
 Matrix.prototype.toString = function(){
     this.toString(true);
 }
-Matrix.prototype.pushState = function(){
-    var m = $.extend(true, {}, this.mtx);
-    this.history.push(m);
-    this.history.shift();
-}
-Matrix.prototype.popState = function(){
-    var m = this.history.pop();
-    this.history.unshift(undefined);
-    if (m==undefined){
-        // we return a copy of current version
-        m = $.extend(true, {}, this.mtx);
-    }
-    this.mtx = null;
-    this.mtx = m;
-    return m;
-}
 Matrix.prototype.toString = function(withBuffer){
     var s = []
     var colstart = 1, colend=1;
@@ -140,12 +128,32 @@ Matrix.prototype.toString = function(withBuffer){
     }
     return s.join("\n\n");
 }
+Matrix.prototype.pushState = function(){
+    var m = $.extend(true, [], this.mtx);
+    //var m = JSON.decode(JSON.encode(this.mtx));
+    this.history.push(m);
+    this.history.shift();
+}
+Matrix.prototype.popState = function(){
+    var m = this.history.pop();
+    this.history.unshift(undefined);
+    if (m==undefined){
+        // we return a copy of current version
+        m = $.extend(true, [], this.mtx); // <== deep copy of object
+        //m = JSON.decode(JSON.encode(this.mtx));
+    }
+    this.mtx = null;
+    this.mtx = m;
+    return m;
+}
 Matrix.prototype.flood = function(row, col, c){
     //console.log('flood: ', row, col, c)
     if (this.mtx[row][col]!=c){
         return 0;
     }
-    this.mtx[row][col]=-1;
+    console.log(this.mtx)
+    this.mtx[row][col]=(-1);
+    console.log(this.mtx)
     row = parseInt(row);
     col = parseInt(col);
     var hits = 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
@@ -157,11 +165,14 @@ Matrix.prototype.collapse = function(){
     for (var c=1;c<this.cols+1;c++){
         var col = this.mtx[c];
         for (var i=1;i<this.rows+1;i++){
+            //console.log(c,i, col)
             if(col[i]==-1){
                 // splice removes this element and returns that element
                 // unshift puts that element in front of the array
-                col.unshift(col.splice(i,1));
+                // NOTE:  splice returns an array(!) hence [0]
+                col.unshift(col.splice(i,1)[0]);
             }
+            //console.log(c, col)
         }
     }
     // detect empty columns, and if collapse to left
@@ -173,7 +184,9 @@ Matrix.prototype.collapse = function(){
         if (this.mtx[c].every(isEmpty)){
             // splice removes this element and returns that element
             // push adds that element to the front of the array with columns
-            this.mtx.push(this.mtx.splice(c,1));
+            // NOTE:  splice returns an array(!) hence [0]
+            this.mtx.push(this.mtx.splice(c,1)[0]);
+            //c--; // rewind one
         }
     }
     return;
@@ -185,9 +198,10 @@ Matrix.prototype.isfinished = function(){
 
 
 $( document ).ready(function() {
-    m = new Matrix(15,15);
+    //m = new Matrix(15,15);
     //m = new Matrix(11,11);
-    //m = new Matrix(4,4);
+    m = new Matrix(4,4);
+    //m = new Matrix(6,6);
     //m = new Matrix(2,2);
     v = new View($('#matrix'), m);
     console.log(m.toString());
@@ -266,8 +280,28 @@ left: 0;
    -o-transform-origin: 100% 100%;
    transform-origin :100% 100%;
 }
+.scores {
+    xborder: 1px red solid;
+}
+.score{
+    xborder: 1px green solid;
+    float:left;
+    width:25%;
+}
+body {
+    font-family:sans-serif;
+    font-size:0.8em;
+}
 </style>
-
+<div class="scores">
+    <div class="score">Hearts: <span id="score_hearts"></span></div>
+    <div class="score">Value: <span id="score_value"></span></div>
+</div>
+<div style="clear:both;"/>
+<div class="scores">
+    <div class="score">Score: <span id="score_score"></span></div>
+    <div class="score">Index: <span id="score_index"></span></div>
+</div>
 <div id="matrix"></div>
 
 <h1>svg</h1>
