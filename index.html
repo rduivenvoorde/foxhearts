@@ -1,0 +1,193 @@
+<html>
+<head>
+<script src="./jquery-2.1.1.min.js"></script>
+<script>
+var colors = ['red', 'green', 'blue', 'yellow'];
+//var colors = ['#d7191c', '#fdae61', '#abdda4', '#2b83ba'];
+
+var NROFCOLORS = 4;
+
+function pad(number,length) {
+    var str = '' + number;
+    while (str.length < length)
+        str = ' ' + str;
+    return str;
+}
+
+View = function(div, matrix){
+    this.matrix = matrix;
+    this.div = div;
+    this.render();
+
+    that = this;
+    $('.heart').on('click', function(evt){
+        // rch = row column heartcolor
+        var rch = $(this).attr('id').split('_');
+        var r = rch[0];
+        var c = rch[1];
+        var h = rch[2];
+        console.time('flood');
+        var hits = matrix.flood(r, c, h);
+        console.timeEnd('flood');
+        console.log('hits',hits);
+        console.time('render');
+        that.render();
+        console.timeEnd('render');
+    });
+}
+View.prototype.toString = function(withBuffer){
+    return this.matrix.toString(withBuffer);
+}
+View.prototype.render = function(){
+    for (var i=1;i<this.matrix.rows+1;i++){
+        // create a new row if not already available
+        if($('#row'+i).length==0){
+            this.div.append($('<div id="row'+i+'" class="row"></div>'));
+        }
+        for (var j=1;j<this.matrix.cols+1;j++){ 
+            var color = this.matrix.mtx[i][j];
+            var cell = $('[id^='+i+'_'+j+']');
+            if(cell.length==0){
+                // create a fresh cell
+                //console.log('create cell', cell);
+                $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" id="'+i+'_'+j+'_'+color+'"></div></div>'));
+            }
+            else{
+                // remove all classes and set the right
+                // console.log(cell);
+                cell.removeClass();
+                if (color>=0){
+                    cell.addClass('heart').addClass(colors[color]);
+                }
+            }
+        }
+    }
+}
+
+Matrix = function(rows, cols){
+    this.cols = cols;
+    this.rows = rows;
+    // create matrix with a buffer around it filled with -1
+    this.mtx = [];
+    for (var i=0;i<rows+2;i++){
+        var x = [];
+        for (var j=0;j<cols+2;j++){
+            x.push(-1);
+        }
+        this.mtx.push(x);
+    }
+    for (var i=1;i<rows+1;i++){
+        for (var j=1;j<cols+1;j++){
+            var val = Math.floor((Math.random() * NROFCOLORS));
+            this.mtx[i][j]=val;
+        }
+    }
+}
+Matrix.prototype.toString = function(withBuffer){
+    var s = []
+    var colstart = 1, colend=1;
+    var rowstart = 1, rowend=1;
+    if (withBuffer){
+        colstart = 0, colend=2;
+        rowstart = 0, rowend=2;
+    }
+    for (var i=rowstart;i<this.rows+rowend;i++){
+        var r='';
+        for (var j=colstart;j<this.cols+colend;j++){
+            r+=(pad(this.mtx[i][j],2)+', ');
+        }
+        s.push( r );
+    }
+    return s.join("\n\n");
+}
+Matrix.prototype.flood = function(row, col, c){
+    //console.log('flood: ', row, col, c)
+    if (this.mtx[row][col]!=c){
+        return 0;
+    }
+    this.mtx[row][col]=-1;
+    row = parseInt(row);
+    col = parseInt(col);
+    return 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
+}
+
+$( document ).ready(function() {
+    m = new Matrix(16,16);
+    v = new View($('#matrix'), m);
+    //console.log(m);
+});
+</script>
+</head>
+<body>
+
+<!-- http://www.cssportal.com/css3-shapes/ -->
+
+<style>
+
+.row {
+    clear: both;
+}
+.item {
+    float: left;
+    height: 24px;
+    width: 24px;
+    background: gray;
+    border: inset white .5px;
+    padding: 0 1px 0 0;
+}
+
+.heart.red:before, .heart.red:after {
+    background: #ff0000;
+}
+.heart.green:before, .heart.green:after {
+    background: #00ff00;
+}
+.heart.blue:before, .heart.blue:after {
+    background: #0000ff;
+}
+.heart.yellow:before, .heart.yellow:after {
+    background: #ffff00;
+}
+.heart { 
+    position: relative;
+}
+.heart:before, .heart:after {
+   position: absolute;
+   content: "";
+   left: 12px; 
+   top: 4px;
+   width: 12px;
+   height: 18px;
+   background: blue;
+   -moz-border-radius: 50px 50px 0 0;
+   border-radius: 50px 50px 0 0;
+   -webkit-transform: rotate(-45deg);
+   -moz-transform: rotate(-45deg);
+   -ms-transform: rotate(-45deg);
+   -o-transform: rotate(-45deg);
+   transform: rotate(-45deg);
+   -webkit-transform-origin: 0 100%;
+   -moz-transform-origin: 0 100%;
+   -ms-transform-origin: 0 100%;
+   -o-transform-origin: 0 100%;
+   transform-origin: 0 100%;
+}
+.heart:after { 
+left: 0; 
+   -webkit-transform: rotate(45deg); 
+   -moz-transform: rotate(45deg); 
+   -ms-transform: rotate(45deg); 
+   -o-transform: rotate(45deg);
+   transform: rotate(45deg);
+   -webkit-transform-origin: 100% 100%;
+   -moz-transform-origin: 100% 100%;
+   -ms-transform-origin: 100% 100%;
+   -o-transform-origin: 100% 100%;
+   transform-origin :100% 100%;
+}
+</style>
+
+<div id="matrix"></div>
+
+</body>
+</html>
