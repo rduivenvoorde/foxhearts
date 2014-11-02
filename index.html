@@ -162,7 +162,7 @@ Matrix.prototype.flood = function(row, col, c){
 
 Matrix.prototype.collapse = function(){
     // detect empty cell, and collapse down (adding -1 to top)
-    for (var c=1;c<this.cols+1;c++){
+    for (var c=this.cols+1;c>0;c--){ // going from back to front!
         var col = this.mtx[c];
         for (var i=1;i<this.rows+1;i++){
             //console.log(c,i, col)
@@ -179,8 +179,7 @@ Matrix.prototype.collapse = function(){
     function isEmpty(element, index, array){
         return element == -1;
     }
-    // TODO bug: this is not working when 2 columns next to each other have to collapse
-    for (var c=1;c<this.cols+1;c++){
+    for (var c=this.cols+1;c>0;c--){ // going from back to front!
         if (this.mtx[c].every(isEmpty)){
             // splice removes this element and returns that element
             // push adds that element to the front of the array with columns
@@ -198,9 +197,9 @@ Matrix.prototype.isfinished = function(){
 
 
 $( document ).ready(function() {
-    //m = new Matrix(15,15);
+    m = new Matrix(15,15);
     //m = new Matrix(11,11);
-    m = new Matrix(4,4);
+    //m = new Matrix(4,4);
     //m = new Matrix(6,6);
     //m = new Matrix(2,2);
     v = new View($('#matrix'), m);
