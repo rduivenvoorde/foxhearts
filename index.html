@@ -5,7 +5,6 @@
 
 
 var colors = ['red', 'green', 'blue', 'yellow'];
-//var colors = ['#d7191c', '#fdae61', '#abdda4', '#2b83ba'];
 
 function pad(number,length) {
     var str = '' + number;
@@ -20,21 +19,35 @@ View = function(div, matrix){
     this.render();
 
     that = this;
-    $('.heart').on('click', function(evt){
-        // rch = row column heartcolor
-        var rch = $(this).attr('id').split('_');
-        var r = rch[0];
-        var c = rch[1];
-        var h = $(this).attr('data-color');
+
+    function is_touch_device() {
+      return 'ontouchstart' in window // works on most browsers 
+            || 'onmsgesturechange' in window; // works on ie10
+    };
+    var actionEvent = 'click';
+    if (is_touch_device()){
+        actionEvent = 'touchstart';
+    }
+    $('.item').on(actionEvent, function(evt){
+        var heart = $($(this).find('.heart')[0]);
+        // rc = row column
+        var rc = heart.attr('id').split('_');
+        var c = rc[0];
+        var r = rc[1];
+        var h = heart.attr('data-color');
         var hits = matrix.flood(r, c, h);
         //console.time('render');
         that.render();
         //console.timeEnd('render');
+        matrix.collapse();
+        that.render();
     });
 }
+
 View.prototype.toString = function(withBuffer){
     return this.matrix.toString(withBuffer);
 }
+
 View.prototype.render = function(){
     for (var i=1;i<this.matrix.rows+1;i++){
         // create a new row if not already available
@@ -42,12 +55,14 @@ View.prototype.render = function(){
             this.div.append($('<div id="row'+i+'" class="row"></div>'));
         }
         for (var j=1;j<this.matrix.cols+1;j++){ 
-            var color = this.matrix.mtx[i][j];
+            var color = this.matrix.mtx[j][i];
             //var cell = $('[id^='+i+'_'+j+']');  // jquery regular expression SLOWWWWW!!!
             var cell = $('#'+i+'_'+j);
             if(cell.length==0){
                 // create a fresh cell
                 $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
+                //$('#row'+i).append($('<div class="item"><img src="heart.svg" style="width:100%;" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
+                //$('#row'+i).append($('<div class="item"><object type="image/svg+xml" data="heart.svg" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
             }
             else{
                 // remove all classes and set the right color
@@ -62,23 +77,26 @@ View.prototype.render = function(){
 }
 
 Matrix = function(rows, cols){
-    this.cols = cols;
     this.rows = rows;
+    this.cols = cols;
     // create matrix with a buffer around it filled with -1
     this.mtx = [];
-    for (var i=0;i<rows+2;i++){
+    for (var i=0;i<cols+2;i++){
         var x = [];
-        for (var j=0;j<cols+2;j++){
+        for (var j=0;j<rows+2;j++){
             x.push(-1);
         }
         this.mtx.push(x);
     }
-    for (var i=1;i<rows+1;i++){
-        for (var j=1;j<cols+1;j++){
+    for (var i=1;i<cols+1;i++){
+        for (var j=1;j<rows+1;j++){
             var val = Math.floor((Math.random() * colors.length));
             this.mtx[i][j]=val;
         }
     }
+}
+Matrix.prototype.toString = function(){
+    this.toString(true);
 }
 Matrix.prototype.toString = function(withBuffer){
     var s = []
@@ -91,7 +109,7 @@ Matrix.prototype.toString = function(withBuffer){
     for (var i=rowstart;i<this.rows+rowend;i++){
         var r='';
         for (var j=colstart;j<this.cols+colend;j++){
-            r+=(pad(this.mtx[i][j],2)+', ');
+            r+=(pad(this.mtx[j][i],2)+', ');
         }
         s.push( r );
     }
@@ -105,14 +123,49 @@ Matrix.prototype.flood = function(row, col, c){
     this.mtx[row][col]=-1;
     row = parseInt(row);
     col = parseInt(col);
-    return 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
+    var hits = 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
+    if (hits==1){
+        this.mtx[row][col]=c;
+    }
+    return hits;
 }
 
+Matrix.prototype.collapse = function(){
+    // detect empty cell, and collapse down (adding -1 to top)
+    for (var c=1;c<this.cols+1;c++){
+        var col = this.mtx[c];
+        for (var i=1;i<this.rows+1;i++){
+            if(col[i]==-1){
+                // splice removes this element and returns that element
+                // unshift puts that element in front of the array
+                col.unshift(col.splice(i,1));
+            }
+        }
+    }
+    // detect empty columns, and if collapse to left
+    function isEmpty(element, index, array){
+        return element == -1;
+    }
+    for (var c=1;c<this.cols+1;c++){
+        if (this.mtx[c].every(isEmpty)){
+            // splice removes this element and returns that element
+            // push adds that element to the front of the array
+            this.mtx.push(this.mtx.splice(c,1));
+        }
+    }
+    return;
+}
+
+Matrix.prototype.isfinished = function(){
+    // TODO
+}
+
+
 $( document ).ready(function() {
-    //m = new Matrix(16,16);
-    m = new Matrix(5,4);
+    m = new Matrix(15,15);
+    //m = new Matrix(4,4);
     v = new View($('#matrix'), m);
-    //console.log(m);
+    console.log(m.toString());
 });
 </script>
 </head>
@@ -134,6 +187,7 @@ $( document ).ready(function() {
     padding: 0 1px 0 0;
 }
 
+/* '#d7191c', '#fdae61', '#abdda4', '#2b83ba' */
 .heart.red:before, .heart.red:after {
     background: #ff0000;
 }
@@ -157,8 +211,8 @@ $( document ).ready(function() {
    width: 12px;
    height: 18px;
    background: blue;
-   -moz-border-radius: 50px 50px 0 0;
    border-radius: 50px 50px 0 0;
+   -moz-border-radius: 50px 50px 0 0;
    -webkit-transform: rotate(-45deg);
    -moz-transform: rotate(-45deg);
    -ms-transform: rotate(-45deg);
@@ -186,6 +240,19 @@ left: 0;
 </style>
 
 <div id="matrix"></div>
+
+<h1>svg</h1>
+
+<svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.0" width="645" height="585" id="heart">
+  <g id="layer1">
+    <path d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z" id="path2417" style="fill:#ff0000"/>
+  </g>
+</svg>
+
+
+<svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" version="1.0" width="645" height="585" id="heart">
+<use xlink:href="#heart"/>
+</svg>
 
 </body>
 </html>
