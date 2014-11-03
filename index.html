@@ -30,7 +30,7 @@ View = function(div, matrix){
         actionEvent = 'touchstart';
     }
     $('#btn_bigger').on(actionEvent, function(evt){ 
-        var size = 1.5*parseInt($('.item').css('width'));
+        var size = 1.1*parseInt($('.item').css('width'));
         $('.item').css('width', size).css('height', size);
     });
     $('#btn_renew').on(actionEvent, function(evt){
@@ -83,12 +83,23 @@ View.prototype.render = function(){
             var color = this.matrix.mtx[j][i];
             //var cell = $('[id^='+i+'_'+j+']');  // jquery regular expression SLOWWWWW!!!
             var cell = $('#'+i+'_'+j);
+            var rendertype = 'CSS';  // CSS, SVG, IMG
             if(cell.length==0){
                 // create a fresh cell
-                //$('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
                 //$('#row'+i).append($('<div class="item"><img src="heart.svg" style="width:100%;" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
                 //$('#row'+i).append($('<div class="item"><object type="image/svg+xml" data="heart.svg" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
-                $('#row'+i).append($('<div class="item"><svg xmlns="http://www.w3.org/2000/svg"><g><use id="'+i+'_'+j+'" class="heart" data-color="'+color+'"  xlink:href="#col'+color+'"/></g></svg></div>'));
+                if (rendertype == 'CSS'){
+                    // working css
+                    $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
+                }
+                else if (rendertype == 'SVG'){
+                    // working svg
+                    $('#row'+i).append($('<div class="item"><svg xmlns="http://www.w3.org/2000/svg"><g><use id="'+i+'_'+j+'" class="heart" data-color="'+color+'"  xlink:href="#col'+color+'"/></g></svg></div>'));
+                }
+                else if (rendertype == 'IMG'){
+                    // working image
+                    $('#row'+i).append($('<div class="item"><img src="heart.png" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"/></div>'));
+                }
             }
             else{
                 // remove all classes and set the right color
@@ -96,7 +107,7 @@ View.prototype.render = function(){
                 cell.attr('data-color',color);
                 if (color>=0){
                     // *** CSS version ***
-                    //cell.addClass('heart').addClass(colors[color]);
+                    cell.addClass('heart').addClass(colors[color]);
                     // *** SVG version ***
                     $($('#'+i+'_'+j)[0]).attr('xlink:href', '#col'+color)
                 }
@@ -224,10 +235,10 @@ Matrix.prototype.isfinished = function(){
 }
 
 function renew(){
-    m = new Matrix(15,15);
+    //m = new Matrix(15,15);
     //m = new Matrix(11,11);
     //m = new Matrix(4,4);
-    //m = new Matrix(6,6);
+    m = new Matrix(6,6);
     //m = new Matrix(2,2);
     v = new View($('#matrix'), m);
     //console.log(m.toString());
@@ -253,8 +264,8 @@ svg{
 }
 .item {
     float: left;
-    height: 48px; /* 24px for css version */
-    width: 48px;  /* 24px for css version */
+    height: 24px; /* 24px for css version */
+    width: 24px;  /* 24px for css version */
     border: inset white .5px;
     padding: 0 1px 0 0;
     background: white; /* gray */
@@ -279,6 +290,8 @@ svg{
 }
 .heart { 
     position: relative;
+    wwidth:100%;
+    wheight:100%;
 }
 .heart:before, .heart:after {
    position: absolute;
@@ -338,20 +351,20 @@ body {
     <div class="score">Hearts: <span id="score_hearts"></span></div>
     <div class="score">Value: <span id="score_value"></span></div>
 </div>
-<div style="clear:both;"/>
+<div style="clear:both;"></div>
 <div class="scores">
     <div class="score">Score: <span id="score_score"></span></div>
     <div class="score">Index: <span id="score_index"></span></div>
 </div>
-<div style="clear:both;"/>
+<div style="clear:both;"></div>
 <div class="scores">
     <div class="message"><span id="score_message"></span></div>
 </div>
 <div id="matrix"></div>
 
 <div style="clear:both;">
-<p><a id="btn_bigger" href="#">BIGGER CELLS</a></p>
-<p><a id="btn_renew" href="#">RENEW</a></p>
+<p><div id="btn_bigger" href="#">BIGGER CELLS</div></p>
+<p><div id="btn_renew" href="#">RENEW</div></p>
 <div>
 
 <!-- template icons/hearts -->
