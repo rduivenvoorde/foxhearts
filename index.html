@@ -29,13 +29,23 @@ View = function(div, matrix){
     if (is_touch_device()){
         actionEvent = 'touchstart';
     }
+    $('#btn_bigger').on(actionEvent, function(evt){ 
+        var size = 1.5*parseInt($('.item').css('width'));
+        $('.item').css('width', size).css('height', size);
+    });
+    $('#btn_renew').on(actionEvent, function(evt){
+        // TODO move renew / init to ???
+        renew();
+    });
     $('.item').on(actionEvent, function(evt){
+        //console.log(this);
         var heart = $($(this).find('.heart')[0]);
         // rc = row column
         var rc = heart.attr('id').split('_');
         var c = rc[0];
         var r = rc[1];
         var h = heart.attr('data-color');
+        //console.log(r, c, h)
         // deep copy
         matrix.pushState();
         var hits = matrix.flood(r, c, h);
@@ -48,7 +58,7 @@ View = function(div, matrix){
         }
         $('#score_hearts').html(hits);
         //console.time('render');
-        that.render();
+        //that.render();  // <= not needed?
         //console.timeEnd('render');
         matrix.collapse();
         that.render();
@@ -75,16 +85,25 @@ View.prototype.render = function(){
             var cell = $('#'+i+'_'+j);
             if(cell.length==0){
                 // create a fresh cell
-                $('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
+                //$('#row'+i).append($('<div class="item"><div class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div></div>'));
                 //$('#row'+i).append($('<div class="item"><img src="heart.svg" style="width:100%;" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
                 //$('#row'+i).append($('<div class="item"><object type="image/svg+xml" data="heart.svg" class="heart ' + colors[color] + '" data-color="'+color+'" id="'+i+'_'+j+'"></div>'));
+                $('#row'+i).append($('<div class="item"><svg xmlns="http://www.w3.org/2000/svg"><g><use id="'+i+'_'+j+'" class="heart" data-color="'+color+'"  xlink:href="#col'+color+'"/></g></svg></div>'));
             }
             else{
                 // remove all classes and set the right color
                 cell.removeClass();
                 cell.attr('data-color',color);
                 if (color>=0){
-                    cell.addClass('heart').addClass(colors[color]);
+                    // *** CSS version ***
+                    //cell.addClass('heart').addClass(colors[color]);
+                    // *** SVG version ***
+                    $($('#'+i+'_'+j)[0]).attr('xlink:href', '#col'+color)
+                }
+                else{
+                    //console.log("COLOR -1", cell[0]);
+                    //$(cell).remove();
+                    $($('#'+i+'_'+j)[0]).attr('xlink:href', '#none')
                 }
             }
         }
@@ -154,9 +173,9 @@ Matrix.prototype.flood = function(row, col, c){
     if (this.mtx[row][col]!=c){
         return 0;
     }
-    console.log(this.mtx)
+    //console.log(this.mtx)
     this.mtx[row][col]=(-1);
-    console.log(this.mtx)
+    //console.log(this.mtx)
     row = parseInt(row);
     col = parseInt(col);
     var hits = 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
@@ -167,14 +186,12 @@ Matrix.prototype.collapse = function(){
     for (var c=this.cols+1;c>0;c--){ // going from back to front!
         var col = this.mtx[c];
         for (var i=1;i<this.rows+1;i++){
-            //console.log(c,i, col)
             if(col[i]==-1){
                 // splice removes this element and returns that element
                 // unshift puts that element in front of the array
                 // NOTE:  splice returns an array(!) hence [0]
                 col.unshift(col.splice(i,1)[0]);
             }
-            //console.log(c, col)
         }
     }
     // detect empty columns, and if collapse to left
@@ -187,7 +204,6 @@ Matrix.prototype.collapse = function(){
             // push adds that element to the front of the array with columns
             // NOTE:  splice returns an array(!) hence [0]
             this.mtx.push(this.mtx.splice(c,1)[0]);
-            //c--; // rewind one
         }
     }
     return;
@@ -207,15 +223,18 @@ Matrix.prototype.isfinished = function(){
     return finished;
 }
 
-
-$( document ).ready(function() {
-    //m = new Matrix(15,15);
+function renew(){
+    m = new Matrix(15,15);
     //m = new Matrix(11,11);
     //m = new Matrix(4,4);
     //m = new Matrix(6,6);
-    m = new Matrix(2,2);
+    //m = new Matrix(2,2);
     v = new View($('#matrix'), m);
-    console.log(m.toString());
+    //console.log(m.toString());
+}
+
+$( document ).ready(function() {
+    renew();
 });
 </script>
 </head>
@@ -234,25 +253,29 @@ svg{
 }
 .item {
     float: left;
-    height: 24px;
-    width: 24px;
+    height: 48px; /* 24px for css version */
+    width: 48px;  /* 24px for css version */
     border: inset white .5px;
     padding: 0 1px 0 0;
     background: white; /* gray */
 }
 
 /* '#d7191c', '#fdae61', '#abdda4', '#2b83ba' */
-.heart.col0:before, .heart.col0:after {
+.col0, .heart.col0:before, .heart.col0:after {
     background: #d7191c;
+    fill: #d7191c;
 }
-.heart.col1:before, .heart.col1:after {
+.col1,.heart.col1:before, .heart.col1:after {
     background: #fdae61;
+    fill: #fdae61;
 }
-.heart.col2:before, .heart.col2:after {
+.col2,.heart.col2:before, .heart.col2:after {
     background: #abdda4;
+    fill: #abdda4;
 }
-.heart.col3:before, .heart.col3:after {
+.col3,.heart.col3:before, .heart.col3:after {
     background: #2b83ba;
+    fill: #2b83ba;
 }
 .heart { 
     position: relative;
@@ -304,6 +327,7 @@ left: 0;
 .red{
     color:red;
     font-weight:bold;
+    fill:red;
 }
 body {
     font-family:sans-serif;
@@ -325,45 +349,26 @@ body {
 </div>
 <div id="matrix"></div>
 
-<h1>svg</h1>
+<div style="clear:both;">
+<p><a id="btn_bigger" href="#">BIGGER CELLS</a></p>
+<p><a id="btn_renew" href="#">RENEW</a></p>
+<div>
 
-<style>
-.col0{
-    fill:#ff0000;
-}
-.col2{
-    fill:#00ff00;
-}
-.col2{
-    fill:#00ff00;
-}
-.col2{
-    fill:#00ff00;
-}
-</style>
+<!-- template icons/hearts -->
 <div style="display:none;">
-<svg xmlns="http://www.w3.org/2000/svg" id="heart0" viewBox="0 0 645 585">
+<svg xmlns="http://www.w3.org/2000/svg" id="col0" viewBox="0 0 645 585">
    <g> <path class="col0" d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z"/> </g> 
 </svg>
-<svg xmlns="http://www.w3.org/2000/svg" id="heart1" viewBox="0 0 645 585">
+<svg xmlns="http://www.w3.org/2000/svg" id="col1" viewBox="0 0 645 585">
+   <g> <path class="col1" d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z"/> </g> 
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" id="col2" viewBox="0 0 645 585">
    <g> <path class="col2" d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z"/> </g> 
 </svg>
-<svg xmlns="http://www.w3.org/2000/svg" id="heart1" viewBox="0 0 645 585">
+<svg xmlns="http://www.w3.org/2000/svg" id="col3" viewBox="0 0 645 585">
    <g> <path class="col3" d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z"/> </g> 
 </svg>
-<svg xmlns="http://www.w3.org/2000/svg" id="heart1" viewBox="0 0 645 585">
-   <g> <path class="col4" d="M 297.29747,550.86823 C 283.52243,535.43191 249.1268,505.33855 220.86277,483.99412 C 137.11867,420.75228 125.72108,411.5999 91.719238,380.29088 C 29.03471,322.57071 2.413622,264.58086 2.5048478,185.95124 C 2.5493594,147.56739 5.1656152,132.77929 15.914734,110.15398 C 34.151433,71.768267 61.014996,43.244667 95.360052,25.799457 C 119.68545,13.443675 131.6827,7.9542046 172.30448,7.7296236 C 214.79777,7.4947896 223.74311,12.449347 248.73919,26.181459 C 279.1637,42.895777 310.47909,78.617167 316.95242,103.99205 L 320.95052,119.66445 L 330.81015,98.079942 C 386.52632,-23.892986 564.40851,-22.06811 626.31244,101.11153 C 645.95011,140.18758 648.10608,223.6247 630.69256,270.6244 C 607.97729,331.93377 565.31255,378.67493 466.68622,450.30098 C 402.0054,497.27462 328.80148,568.34684 323.70555,578.32901 C 317.79007,589.91654 323.42339,580.14491 297.29747,550.86823 z"/> </g> 
-</svg>
+</div>
 
-</div>
-<div class="item">
-<svg xmlns="http://www.w3.org/2000/svg"><g><use xlink:href="#heart0"/></g></svg>
-</div>
-<!--
-$($('#x1_3')[0]).attr('xlink:href', '#heart0')
--->
-<div class="item">
-<svg xmlns="http://www.w3.org/2000/svg"><g id="g1_3"><use id="x1_3" xlink:href="#heart1"/></g></svg>
-</div>
 </body>
 </html>
