@@ -18,6 +18,7 @@ View = function(div, matrix){
     this.div = div;
     this.render();
     this.clicks=0;
+    this.score=0;
 
     that = this;
 
@@ -38,6 +39,7 @@ View = function(div, matrix){
         renew();
     });
     $('.item').on(actionEvent, function(evt){
+        that.clicks++;
         var item = $(this);
         // rc = row column
         var rc = item.attr('id').split('_');
@@ -55,7 +57,13 @@ View = function(div, matrix){
             matrix.popState();
             hits=0;
         }
+        var value = (hits-1)*(hits-1);
+
         $('#score_hearts').html(hits);
+        $('#score_value').html(value);
+        that.score+=value;
+        $('#score_score').html(that.score);
+        $('#score_index').html(that.score/that.clicks);
         //console.time('render');
         //that.render();  // <= not needed?
         //console.timeEnd('render');
@@ -376,6 +384,7 @@ body {
 <div id="matrix"></div>
 
 <div style="clear:both;">
+<p>&nbsp;</p>
 <p><div id="btn_bigger" href="#">BIGGER CELLS</div></p>
 <p><div id="btn_renew" href="#">RENEW</div></p>
 <div>
