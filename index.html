@@ -1,393 +1,38 @@
-<html>
+<!DOCTYPE HTML>
+<html lang="en-US">
 <head>
-<script src="./jquery-2.1.1.min.js"></script>
-<script>
-
-
-var colors = ['col0', 'col1', 'col2', 'col3'];
-
-function pad(number,length) {
-    var str = '' + number;
-    while (str.length < length)
-        str = ' ' + str;
-    return str;
-}
-
-View = function(div, matrix){
-    this.matrix = matrix;
-    this.div = div;
-    this.render();
-    this.clicks=0;
-    this.score=0;
-
-    that = this;
-
-    function is_touch_device() {
-      return 'ontouchstart' in window // works on most browsers 
-            || 'onmsgesturechange' in window; // works on ie10
-    };
-    var actionEvent = 'click';
-    if (is_touch_device()){
-        actionEvent = 'touchstart';
-    }
-    $('#btn_bigger').on(actionEvent, function(evt){ 
-        var size = 1.3*parseInt($('.item').css('width'));
-        $('.item').css('width', size).css('height', size);
-    });
-    $('#btn_renew').on(actionEvent, function(evt){
-        // TODO move renew / init to ???
-        renew();
-    });
-    $('.item').on(actionEvent, function(evt){
-        that.clicks++;
-        var item = $(this);
-        // rc = row column
-        var rc = item.attr('id').split('_');
-        var c = rc[0];
-        var r = rc[1];
-        var h = that.matrix.mtx[r][c];
-        //console.log(r, c, h)
-        // deep copy
-        matrix.pushState();
-        var hits = matrix.flood(r, c, h);
-        // TODO move this to Matrix (combined history: mtx, hearts, score)
-        $('#score_hearts').html(hits);
-        if (hits==1){
-            //restore
-            matrix.popState();
-            hits=0;
-        }
-        var value = (hits-1)*(hits-1);
-
-        $('#score_hearts').html(hits);
-        $('#score_value').html(value);
-        that.score+=value;
-        $('#score_score').html(that.score);
-        $('#score_index').html(that.score/that.clicks);
-        //console.time('render');
-        //that.render();  // <= not needed?
-        //console.timeEnd('render');
-        matrix.collapse();
-        that.render();
-        //console.log(matrix.mtx);
-        if (matrix.isfinished()){
-            $('#score_message').html("FINISHED, no more moves to play...").removeClass().addClass('red');
-        }
-    });
-}
-
-View.prototype.toString = function(withBuffer){
-    return this.matrix.toString(withBuffer);
-}
-
-View.prototype.render = function(){
-    for (var i=1;i<this.matrix.rows+1;i++){
-        // create a new row if not already available
-        if($('#row'+i).length==0){
-            this.div.append($('<div id="row'+i+'" class="row"></div>'));
-        }
-        for (var j=1;j<this.matrix.cols+1;j++){ 
-            var color = this.matrix.mtx[j][i];
-            var rendertype = 'IMG';  // CSS, SVG, IMG
-            var cell = $('#'+i+'_'+j);
-            if(cell.length==0){
-                // create a fresh cell
-                if (rendertype == 'CSS'){
-                    // working css
-                    $('#row'+i).append($('<div class="item" id="'+i+'_'+j+'"><div class="heart ' + colors[color] + '"></div></div>'));
-                }
-                else if (rendertype == 'SVG'){
-                    // working svg
-                    $('#row'+i).append($('<div class="item" id="'+i+'_'+j+'"><svg xmlns="http://www.w3.org/2000/svg"><g><use class="heart"  xlink:href="#col'+color+'"/></g></svg></div>'));
-                }
-                else if (rendertype == 'IMG'){
-                    // working image
-                    $('#row'+i).append($('<div class="item" id="'+i+'_'+j+'"><img src="heart.png" class="heart ' + colors[color] + '"/></div>'));
-                }
-            }
-            else{
-                // heart is here the element that renders the heart (CSS, SVG or IMG)
-                var heart = $($('#'+i+'_'+j).find('.heart')[0]);
-                // remove all classes and set the right color
-                heart.removeClass();
-                heart.addClass('heart');
-                if (color>=0){
-                    // *** CSS version ***
-                    heart.addClass(colors[color]);
-                    // *** SVG version ***
-                    heart.attr('xlink:href', '#col'+color)
-                }
-                else{
-                    // *** SVG version ***
-                    heart.attr('xlink:href', '#none')
-                }
-            }
-        }
-    }
-}
-
-Matrix = function(rows, cols){
-    this.rows = rows;
-    this.cols = cols;
-    // create matrix with a buffer around it filled with -1
-    this.mtx = [];
-    this.history = new Array(10);
-    for (var i=0;i<cols+2;i++){
-        var x = [];
-        for (var j=0;j<rows+2;j++){
-            x.push(-1);
-        }
-        this.mtx.push(x);
-    }
-    for (var i=1;i<cols+1;i++){
-        for (var j=1;j<rows+1;j++){
-            var val = Math.floor((Math.random() * colors.length));
-            this.mtx[i][j]=val;
-        }
-    }
-}
-Matrix.prototype.toString = function(){
-    this.toString(true);
-}
-Matrix.prototype.toString = function(withBuffer){
-    var s = []
-    var colstart = 1, colend=1;
-    var rowstart = 1, rowend=1;
-    if (withBuffer){
-        colstart = 0, colend=2;
-        rowstart = 0, rowend=2;
-    }
-    for (var i=rowstart;i<this.rows+rowend;i++){
-        var r='';
-        for (var j=colstart;j<this.cols+colend;j++){
-            r+=(pad(this.mtx[j][i],2)+', ');
-        }
-        s.push( r );
-    }
-    return s.join("\n\n");
-}
-Matrix.prototype.pushState = function(){
-    var m = $.extend(true, [], this.mtx);
-    //var m = JSON.decode(JSON.encode(this.mtx));
-    this.history.push(m);
-    this.history.shift();
-}
-Matrix.prototype.popState = function(){
-    var m = this.history.pop();
-    this.history.unshift(undefined);
-    if (m==undefined){
-        // we return a copy of current version
-        m = $.extend(true, [], this.mtx); // <== deep copy of object
-        //m = JSON.decode(JSON.encode(this.mtx));
-    }
-    this.mtx = null;
-    this.mtx = m;
-    return m;
-}
-Matrix.prototype.flood = function(row, col, c){
-    //console.log('flood: ', row, col, c)
-    if (this.mtx[row][col]!=c){
-        return 0;
-    }
-    //console.log(this.mtx)
-    this.mtx[row][col]=(-1);
-    //console.log(this.mtx)
-    row = parseInt(row);
-    col = parseInt(col);
-    var hits = 1+this.flood(row-1,col,c)+this.flood(row+1,col,c)+this.flood(row,col-1,c)+this.flood(row,col+1,c);
-    return hits;
-}
-Matrix.prototype.collapse = function(){
-    // detect empty cell, and collapse down (adding -1 to top)
-    for (var c=this.cols+1;c>0;c--){ // going from back to front!
-        var col = this.mtx[c];
-        for (var i=1;i<this.rows+1;i++){
-            if(col[i]==-1){
-                // splice removes this element and returns that element
-                // unshift puts that element in front of the array
-                // NOTE:  splice returns an array(!) hence [0]
-                col.unshift(col.splice(i,1)[0]);
-            }
-        }
-    }
-    // detect empty columns, and if collapse to left
-    function isEmpty(element, index, array){
-        return element == -1;
-    }
-    for (var c=this.cols+1;c>0;c--){ // going from back to front!
-        if (this.mtx[c].every(isEmpty)){
-            // splice removes this element and returns that element
-            // push adds that element to the front of the array with columns
-            // NOTE:  splice returns an array(!) hence [0]
-            this.mtx.push(this.mtx.splice(c,1)[0]);
-        }
-    }
-    return;
-}
-Matrix.prototype.isfinished = function(){
-    var finished = true;
-    // going over all cells, checking if either the next on this row, or the
-    // next in this column is the same value (and NOT -1)
-    for (var row=1;row<this.rows+1;row++){
-        for (var col=1;col<this.cols+1;col++){
-            if (this.mtx[row][col]>=0 && 
-                (this.mtx[row][col]==this.mtx[row+1][col] || this.mtx[row][col]==this.mtx[row][col+1])){
-                return false;
-            }
-        }
-    }
-    return finished;
-}
-
-function renew(){
-    //m = new Matrix(15,15);
-    m = new Matrix(11,11);
-    //m = new Matrix(4,4);
-    //m = new Matrix(6,6);
-    //m = new Matrix(2,2);
-    v = new View($('#matrix'), m);
-    //console.log(m.toString());
-}
-
-$( document ).ready(function() {
-    renew();
-});
-</script>
+  <meta charset="UTF-8">
+  <title>Foxhearts</title>
+  <link rel="icon" type="image/png" href="images/icon-128.png">
+    <meta name="viewport" content="width=device-width"> 
+  <link href="style/style.css" type="text/css" rel="stylesheet">
 </head>
 <body>
 
-<!-- http://www.cssportal.com/css3-shapes/ -->
-
-<style>
-/* svg only used for hearts: fill enclosing div 100%*/
-svg{
-    width:100%;
-    height:100%;
-}
-.row {
-    clear: both;
-}
-.item {
-    float: left;
-    height: 48px; /* 24px for css version */
-    width: 48px;  /* 24px for css version */
-    border: inset white .5px;
-    padding: 0 1px 0 0;
-    background: white; /* gray */
-}
-
-/* '#d7191c', '#fdae61', '#abdda4', '#2b83ba' */
-/*.col0, .heart.col0:before, .heart.col0:after {
-    background: #d7191c;
-    fill: #d7191c;
-}
-.col1,.heart.col1:before, .heart.col1:after {
-    background: #fdae61;
-    fill: #fdae61;
-}
-.col2,.heart.col2:before, .heart.col2:after {
-    background: #abdda4;
-    fill: #abdda4;
-}
-.col3,.heart.col3:before, .heart.col3:after {
-    background: #2b83ba;
-    fill: #2b83ba;
-}*/
-.col0, .heart.col0:before, .heart.col0:after {
-    background: #ff0000;
-    fill: #ff0000;
-}
-.col1,.heart.col1:before, .heart.col1:after {
-    background: #00ff00;
-    fill: #00ff00;
-}
-.col2,.heart.col2:before, .heart.col2:after {
-    background: #0000ff;
-    fill: #0000ff;
-}
-.col3,.heart.col3:before, .heart.col3:after {
-    background: #ffff00;
-    fill: #ffff00;
-}
-.heart { 
-    position: relative;
-    width:100%;
-    height:100%;
-}
-.heart:before, .heart:after {
-   position: absolute;
-   content: "";
-   left: 12px; 
-   top: 4px;
-   width: 12px;
-   height: 18px;
-   background: blue;
-   border-radius: 50px 50px 0 0;
-   -moz-border-radius: 50px 50px 0 0;
-   -webkit-transform: rotate(-45deg);
-   -moz-transform: rotate(-45deg);
-   -ms-transform: rotate(-45deg);
-   -o-transform: rotate(-45deg);
-   transform: rotate(-45deg);
-   -webkit-transform-origin: 0 100%;
-   -moz-transform-origin: 0 100%;
-   -ms-transform-origin: 0 100%;
-   -o-transform-origin: 0 100%;
-   transform-origin: 0 100%;
-}
-.heart:after { 
-left: 0; 
-   -webkit-transform: rotate(45deg); 
-   -moz-transform: rotate(45deg); 
-   -ms-transform: rotate(45deg); 
-   -o-transform: rotate(45deg);
-   transform: rotate(45deg);
-   -webkit-transform-origin: 100% 100%;
-   -moz-transform-origin: 100% 100%;
-   -ms-transform-origin: 100% 100%;
-   -o-transform-origin: 100% 100%;
-   transform-origin :100% 100%;
-}
-.score{
-    xborder: 1px green solid;
-    float:left;
-    width:25%;
-}
-.message{
-    float:left;
-    width:50%;
-    height:25px;
-}
-.red{
-    color:red;
-    font-weight:bold;
-    fill:red;
-}
-body {
-    font-family:sans-serif;
-    font-size:0.8em;
-}
-</style>
 <div class="scores">
     <div class="score">Hearts: <span id="score_hearts"></span></div>
     <div class="score">Value: <span id="score_value"></span></div>
+    <div class="score">Score: <span id="score_score"></span></div>
 </div>
-<div style="clear:both;"></div>
+<!--<div style="clear:both;"></div>
 <div class="scores">
     <div class="score">Score: <span id="score_score"></span></div>
     <div class="score">Index: <span id="score_index"></span></div>
-</div>
+</div>-->
 <div style="clear:both;"></div>
 <div class="scores">
     <div class="message"><span id="score_message"></span></div>
 </div>
+<p><button id="btn_install"> Install app on device </button></p>
 <div id="matrix"></div>
 
-<div style="clear:both;">
+<div style="clear:both;"> <div>
 <p>&nbsp;</p>
-<p><div id="btn_bigger" href="#">BIGGER CELLS</div></p>
-<p><div id="btn_renew" href="#">RENEW</div></p>
-<div>
+
+<p><button id="btn_renew" href="#">NEW GAME</button></p>
+
+<p><button id="btn_bigger" href="#">BIGGER CELLS</button></p>
+
 
 <!-- template icons/hearts -->
 <div style="display:none;">
@@ -406,4 +51,9 @@ body {
 </div>
 
 </body>
+
+<script src="scripts/jquery-2.1.1.min.js"></script>
+<script src="scripts/hearts.js"></script>
+<script src="scripts/install.js"></script>
+
 </html>

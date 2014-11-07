@@ -1,0 +1,174 @@
+
+/* || basic set up + sizing for containers */
+
+html, body {
+  margin: 0;
+  overflow:hidden;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+}
+
+body {
+  width: 100%;
+  height: inherit;
+  font-family:sans-serif;
+  font-size:0.8em;
+}
+
+.text-indicator {
+  display: inline-block;
+  color: white;
+  background-color: gray;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.4),rgba(0,0,0,0.75));
+  border-radius: 5px;
+  box-shadow: 1px 1px 1px black;
+  text-shadow: 1px 1px 1px black;
+  border: 1px solid gray;
+  padding: 0.5rem;
+  margin: 1rem;
+}
+
+.text-indicator p {
+  margin: 0;
+}
+
+h1, body > p {
+  margin-left: 1rem;
+}
+
+/* || install button */
+
+#install {
+  font-size: 1rem;
+  line-height: 1.8rem;
+  border-radius: 5px;
+  border: 1px solid black;
+  background: linear-gradient(to bottom, #7B72D8, #2618B1);
+  color: white;
+  text-shadow: 1px 1px 1px black;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: inset 0px 5px 3px rgba(255,255,255,0.2),
+	              inset 0px -5px 3px rgba(0,0,0,0.2);
+  margin: 1rem;
+}
+
+
+/* svg only used for hearts: fill enclosing div 100%*/
+svg{
+    width:100%;
+    height:100%;
+}
+div#matrix{
+    width:310px;
+    margin: 0 auto;
+}
+.row {
+    clear: both;
+}
+.item {
+    float: left;
+    height: 28px; /* 24px for css version */
+    width: 28px;  /* 24px for css version */
+    border: inset white .5px;
+    padding: 0 1px 0 0;
+    background: white; /* gray */
+}
+
+/* '#d7191c', '#fdae61', '#abdda4', '#2b83ba' */
+/*.col0, .heart.col0:before, .heart.col0:after {
+    background: #d7191c;
+    fill: #d7191c;
+}
+.col1,.heart.col1:before, .heart.col1:after {
+    background: #fdae61;
+    fill: #fdae61;
+}
+.col2,.heart.col2:before, .heart.col2:after {
+    background: #abdda4;
+    fill: #abdda4;
+}
+.col3,.heart.col3:before, .heart.col3:after {
+    background: #2b83ba;
+    fill: #2b83ba;
+}*/
+
+
+/* http://www.cssportal.com/css3-shapes/ */
+
+.col0, .heart.col0:before, .heart.col0:after {
+    background: #ff0000;
+    fill: #ff0000;
+}
+.col1,.heart.col1:before, .heart.col1:after {
+    background: #00ff00;
+    fill: #00ff00;
+}
+.col2,.heart.col2:before, .heart.col2:after {
+    background: #0000ff;
+    fill: #0000ff;
+}
+.col3,.heart.col3:before, .heart.col3:after {
+    background: #ffff00;
+    fill: #ffff00;
+}
+.heart { 
+    position: relative;
+    width:100%;
+    height:100%;
+}
+.heart:before, .heart:after {
+   position: absolute;
+   content: "";
+   left: 12px; 
+   top: 4px;
+   width: 12px;
+   height: 18px;
+   background: blue;
+   border-radius: 50px 50px 0 0;
+   -moz-border-radius: 50px 50px 0 0;
+   -webkit-transform: rotate(-45deg);
+   -moz-transform: rotate(-45deg);
+   -ms-transform: rotate(-45deg);
+   -o-transform: rotate(-45deg);
+   transform: rotate(-45deg);
+   -webkit-transform-origin: 0 100%;
+   -moz-transform-origin: 0 100%;
+   -ms-transform-origin: 0 100%;
+   -o-transform-origin: 0 100%;
+   transform-origin: 0 100%;
+}
+.heart:after { 
+left: 0; 
+   -webkit-transform: rotate(45deg); 
+   -moz-transform: rotate(45deg); 
+   -ms-transform: rotate(45deg); 
+   -o-transform: rotate(45deg);
+   transform: rotate(45deg);
+   -webkit-transform-origin: 100% 100%;
+   -moz-transform-origin: 100% 100%;
+   -ms-transform-origin: 100% 100%;
+   -o-transform-origin: 100% 100%;
+   transform-origin :100% 100%;
+}
+.score{
+    xborder: 1px green solid;
+    float:left;
+    width:30%;
+}
+.message{
+    float:left;
+    width:50%;
+    height:25px;
+}
+.red{
+    color:red;
+    font-weight:bold;
+    fill:red;
+}
+body {
+}
+
